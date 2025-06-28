@@ -1,0 +1,28 @@
+{
+  "num_sessions": 3,
+  "episodes_per_session": 200,
+  "batch_size": 100,
+  "initial_noise": 0.1,
+  "noise_decay": 0.995,
+  "min_noise": 0.01,
+  "timestamp": "20250627_202137",
+  "agent_config": {
+    "state_dim": 5,
+    "action_dim": 3,
+    "action_low": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "action_high": [
+      10.0,
+      5.0,
+      5.0
+    ],
+    "gamma": 0.99,
+    "tau": 0.005,
+    "policy_noise": 0.2,
+    "noise_clip": 0.5,
+    "policy_freq": 4
+  }
+}

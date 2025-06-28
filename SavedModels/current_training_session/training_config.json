@@ -1,0 +1,9 @@
+{
+  "num_sessions": 2,
+  "episodes_per_session": 100,
+  "batch_size": 100,
+  "auto_save_interval": 25,
+  "save_best_only": false,
+  "overwrite_saves": true,
+  "timestamp": "2025-06-27T22:04:40.596736"
+}
