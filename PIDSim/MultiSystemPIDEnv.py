@@ -46,7 +46,21 @@ class MultiSystemPIDEnv:
         self.prev_error = error
 
         next_state = self._get_state()
-        reward = -abs(error)
+        # Original negative reward function (works well with proper hyperparameters)
+        reward = -abs(error)  # Range: -∞ to 0, less negative = better performance
+        
+        # Alternative reward functions (uncomment to use):
+        # reward = 1.0 / (1.0 + abs(error))  # Positive reward: range: 0 to 1, higher is better
+        # reward = np.exp(-abs(error))  # Exponential decay: range: 0 to 1
+        # reward = 1.0 - abs(error) / self.desired_state  # Linear: range: 0 to 1
+        # reward = 1.0 / (1.0 + abs(error)**2)  # Squared error penalty
+        
+        # Enhanced reward with multiple components (uncomment to use):
+        # error_reward = 1.0 / (1.0 + abs(error))
+        # stability_reward = 1.0 / (1.0 + abs(derivative))  # Penalize oscillations
+        # settling_reward = 1.0 if abs(error) < 0.1 else 0.0  # Bonus for good settling
+        # reward = error_reward + 0.1 * stability_reward + 0.2 * settling_reward
+        
         done = self.step_count >= self.max_steps
 
         return next_state, reward, done, {'error': error}

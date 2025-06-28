@@ -3,7 +3,7 @@
   "episodes_per_session": 100,
   "batch_size": 100,
   "auto_save_interval": 25,
-  "save_best_only": false,
+  "save_best_only": true,
   "overwrite_saves": true,
-  "timestamp": "2025-06-27T22:04:40.596736"
+  "timestamp": "2025-06-28T15:12:07.123747"
 }

@@ -8,16 +8,17 @@ import torch.nn.functional as F
 from Network.Actor import Actor
 from Network.Critic import Critic
 from Network.ReplayBuffer import ReplayBuffer
+import numpy as np
 
 class TD3Agent:
     def __init__(self, state_dim, action_dim, action_low, action_high, device, state_shape=None):
         self.device = device
         self.action_dim = action_dim
-        self.gamma = 0.97
+        self.gamma = 0.99
         self.tau = 0.005
-        self.policy_noise = 0.3
+        self.policy_noise = 0.2
         self.noise_clip = 0.5
-        self.policy_freq = 4
+        self.policy_freq = 2
         self.total_it = 0
 
         self.action_low = torch.tensor(action_low, dtype=torch.float32).to(device)
@@ -31,8 +32,8 @@ class TD3Agent:
         self.critic_target = Critic(state_dim, action_dim).to(device)
         self.critic_target.load_state_dict(self.critic.state_dict())
 
-        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=5e-05)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=5e-05)
+        self.actor_optimizer = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=3e-4)
 
         if state_shape is None:
             state_shape = (state_dim,)
@@ -46,6 +47,9 @@ class TD3Agent:
     def select_action(self, state):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         raw_action = self.actor(state).cpu().detach().numpy().flatten()
+        
+        # Apply tanh activation for consistency with training
+        raw_action = np.tanh(raw_action)
 
         scaled_action = self.action_low.cpu().numpy() + 0.5 * (raw_action + 1.0) * (self.action_high.cpu().numpy() - self.action_low.cpu().numpy())
         return scaled_action
@@ -61,7 +65,10 @@ class TD3Agent:
         with torch.no_grad():
             noise = (torch.randn_like(actions) * self.policy_noise).clamp(-self.noise_clip, self.noise_clip)
             next_actions = self.actor_target(next_states) + noise
-
+            
+            # Apply action scaling to match inference
+            next_actions = torch.tanh(next_actions)  # Ensure actions are in [-1, 1]
+            next_actions = self.action_low + 0.5 * (next_actions + 1.0) * (self.action_high - self.action_low)
             next_actions = torch.max(torch.min(next_actions, self.action_high), self.action_low)
 
             target_q1, target_q2 = self.critic_target(next_states, next_actions)
@@ -80,7 +87,13 @@ class TD3Agent:
         self.critic_optimizer.step()
 
         if self.total_it % self.policy_freq == 0:
-            actor_loss = -self.critic.forward_q1(states, self.actor(states)).mean()
+            actor_actions = self.actor(states)
+            # Apply action scaling to match inference
+            actor_actions = torch.tanh(actor_actions)  # Ensure actions are in [-1, 1]
+            actor_actions = self.action_low + 0.5 * (actor_actions + 1.0) * (self.action_high - self.action_low)
+            actor_actions = torch.max(torch.min(actor_actions, self.action_high), self.action_low)
+            
+            actor_loss = -self.critic.forward_q1(states, actor_actions).mean()
 
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
